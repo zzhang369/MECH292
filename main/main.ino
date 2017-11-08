@@ -1,99 +1,99 @@
+/*
+ *  This sketch demonstrates how to set up a simple HTTP-like server.
+ *  The server will set a GPIO pin depending on the request
+ *    http://server_ip/gpio/0 will set the GPIO2 low,
+ *    http://server_ip/gpio/1 will set the GPIO2 high
+ *  server_ip is the IP address of the ESP8266 module, will be
+ *  printed to Serial when the module is connected.
+ */
+
 #include <ESP8266WiFi.h>
- 
+
 const char* ssid = "";
 const char* password = "";
- 
-int ledPin = LED_BUILTIN;
+
+// Create an instance of the server
+// specify the port to listen on as an argument
 WiFiServer server(80);
- 
+
+int ledPin = LED_BUILTIN;
+
 void setup() {
   Serial.begin(115200);
   delay(10);
- 
- 
+
+  // prepare GPIO2
   pinMode(ledPin, OUTPUT);
-  digitalWrite(ledPin, LOW);
- 
+  digitalWrite(ledPin, 0);
+  
   // Connect to WiFi network
   Serial.println();
   Serial.println();
   Serial.print("Connecting to ");
   Serial.println(ssid);
- 
+  
   WiFi.begin(ssid, password);
- 
+  
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
   }
   Serial.println("");
   Serial.println("WiFi connected");
- 
+  
   // Start the server
   server.begin();
   Serial.println("Server started");
- 
+
   // Print the IP address
-  Serial.print("Use this URL : ");
-  Serial.print("http://");
-  Serial.print(WiFi.localIP());
-  Serial.println("/");
- 
+  Serial.println(WiFi.localIP());
 }
- 
+
 void loop() {
   // Check if a client has connected
   WiFiClient client = server.available();
   if (!client) {
     return;
   }
- 
+  
   // Wait until the client sends some data
   Serial.println("new client");
   while(!client.available()){
     delay(1);
   }
- 
+  
   // Read the first line of the request
-  String request = client.readStringUntil('\r');
-  Serial.println(request);
+  String req = client.readStringUntil('\r');
+  Serial.println(req);
   client.flush();
- 
+  
   // Match the request
- 
-  int value = LOW;
-  if (request.indexOf("/LED=ON") != -1) {
-    digitalWrite(ledPin, HIGH);
-    value = HIGH;
+  int val;
+  if (req.indexOf("/gpio/0") != -1)
+    val = 0;
+  else if (req.indexOf("/gpio/1") != -1)
+    val = 1;
+  else {
+    Serial.println("invalid request");
+    client.stop();
+    return;
   }
-  if (request.indexOf("/LED=OFF") != -1){
-    digitalWrite(ledPin, LOW);
-    value = LOW;
-  }
- 
- 
- 
-  // Return the response
-  client.println("HTTP/1.1 200 OK");
-  client.println("Content-Type: text/html");
-  client.println(""); //  do not forget this one
-  client.println("<!DOCTYPE HTML>");
-  client.println("<html>");
- 
-  client.print("Led pin is now: ");
- 
-  if(value == HIGH) {
-    client.print("On");
-  } else {
-    client.print("Off");
-  }
-  client.println("<br><br>");
-  client.println("Click <a href=\"/LED=ON\">here</a> turn the LED on pin 5 ON<br>");
-  client.println("Click <a href=\"/LED=OFF\">here</a> turn the LED on pin 5 OFF<br>");
-  client.println("</html>");
- 
+
+  // Set GPIO2 according to the request
+  digitalWrite(ledPin, val);
+  
+  client.flush();
+
+  // Prepare the response
+  String s = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<!DOCTYPE HTML>\r\n<html>\r\nGPIO is now ";
+  s += (val)?"high":"low";
+  s += "</html>\n";
+  String s = "HTTP/1.1 200 OK\r\n";
+  // Send the response to the client
+ /* client.print(s);
   delay(1);
-  Serial.println("Client disconnected");
-  Serial.println("");
- 
+  Serial.println("Client disonnected");*/
+
+  // The client will actually be disconnected
+  // when the function returns and 'client' object is detroyed
 }
