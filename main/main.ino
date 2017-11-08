@@ -17,7 +17,8 @@ const char* password = "";
 WiFiServer server(80);
 
 int ledPin = LED_BUILTIN;
-
+WiFiClient client;
+ 
 void setup() {
   Serial.begin(115200);
   delay(10);
@@ -57,14 +58,14 @@ void loop() {
   }
   
   // Wait until the client sends some data
-  Serial.println("new client");
+//  Serial.println("new client");
   while(!client.available()){
     delay(1);
   }
   
   // Read the first line of the request
   String req = client.readStringUntil('\r');
-  Serial.println(req);
+//  Serial.println(req);
   client.flush();
   
   // Match the request
@@ -85,15 +86,19 @@ void loop() {
   client.flush();
 
   // Prepare the response
-  String s = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<!DOCTYPE HTML>\r\n<html>\r\nGPIO is now ";
-  s += (val)?"high":"low";
-  s += "</html>\n";
-  String s = "HTTP/1.1 200 OK\r\n";
-  // Send the response to the client
- /* client.print(s);
-  delay(1);
-  Serial.println("Client disonnected");*/
+//  String s = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<!DOCTYPE HTML>\r\n<html>\r\nGPIO is now ";
+//  s += (val)?"high":"low";
+//  s += "</html>\n";
+  
 
-  // The client will actually be disconnected
+  // Send the response to the client
+  client.print("HTTP/1.1 200 OK\r\n");
+  delay(1);
+//  Serial.println("Client disonnected");
+
+  // The client will actually be disconnected 
   // when the function returns and 'client' object is detroyed
+
+  client.stop();
 }
+
